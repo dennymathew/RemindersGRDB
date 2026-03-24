@@ -7,7 +7,7 @@ struct RemindersGRDBApp: App {
     }
     var body: some Scene {
         WindowGroup {
-            RemindersListsView()
+            RemindersListsView(model: .init())
         }
     }
 }

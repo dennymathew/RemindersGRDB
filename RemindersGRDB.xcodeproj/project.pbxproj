@@ -8,6 +8,7 @@
 
 /* Begin PBXBuildFile section */
 		EF6B00542F72D87A00176E91 /* SQLiteData in Frameworks */ = {isa = PBXBuildFile; productRef = EF6B00532F72D87A00176E91 /* SQLiteData */; };
+		EF6CFB922F72F90000AD128A /* DependenciesTestSupport in Frameworks */ = {isa = PBXBuildFile; productRef = EF6CFB912F72F90000AD128A /* DependenciesTestSupport */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -64,6 +65,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				EF6CFB922F72F90000AD128A /* DependenciesTestSupport in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -141,6 +143,7 @@
 			);
 			name = RemindersGRDBTests;
 			packageProductDependencies = (
+				EF6CFB912F72F90000AD128A /* DependenciesTestSupport */,
 			);
 			productName = RemindersGRDBTests;
 			productReference = EF6B00322F72D41900176E91 /* RemindersGRDBTests.xctest */;
@@ -203,6 +206,7 @@
 			minimizedProjectReferenceProxies = 1;
 			packageReferences = (
 				EF6B00522F72D87A00176E91 /* XCRemoteSwiftPackageReference "sqlite-data" */,
+				EF6CFB902F72F90000AD128A /* XCRemoteSwiftPackageReference "swift-dependencies" */,
 			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = EF6B00262F72D41800176E91 /* Products */;
@@ -597,6 +601,14 @@
 				minimumVersion = 1.6.1;
 			};
 		};
+		EF6CFB902F72F90000AD128A /* XCRemoteSwiftPackageReference "swift-dependencies" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/pointfreeco/swift-dependencies";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 1.11.0;
+			};
+		};
 /* End XCRemoteSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
@@ -604,6 +616,11 @@
 			isa = XCSwiftPackageProductDependency;
 			package = EF6B00522F72D87A00176E91 /* XCRemoteSwiftPackageReference "sqlite-data" */;
 			productName = SQLiteData;
+		};
+		EF6CFB912F72F90000AD128A /* DependenciesTestSupport */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = EF6CFB902F72F90000AD128A /* XCRemoteSwiftPackageReference "swift-dependencies" */;
+			productName = DependenciesTestSupport;
 		};
 /* End XCSwiftPackageProductDependency section */
 	};

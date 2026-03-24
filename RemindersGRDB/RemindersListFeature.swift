@@ -1,8 +1,31 @@
 import SwiftUI
 import SQLiteData
 
+@Observable
+class RemindersListModel {
+    @ObservationIgnored
+    @Dependency(\.defaultDatabase)
+    var database
+
+    @ObservationIgnored
+    @FetchAll(RemindersList.order(by: \.title))
+    var remindersLists
+
+    func  deleteButtonTapped(indexSet: IndexSet) {
+        withErrorReporting {
+            try database.write { db in
+                let ids = indexSet.map { remindersLists[$0].id }
+                try RemindersList
+                    .where { $0.id.in(ids) }
+                    .delete()
+                    .execute(db)
+            }
+        }
+    }
+}
+
 struct RemindersListsView: View {
-    @FetchAll(RemindersList.order(by: \.title)) var remindersLists
+    let model: RemindersListModel
 
     @State private var searchText: String = ""
 
@@ -13,12 +36,13 @@ struct RemindersListsView: View {
             }
 
             Section {
-                ForEach(remindersLists) { list in
+                ForEach(model.remindersLists) { list in
                     RemindersListRow(
                         incompleteRemindersCount: 0,
                         remindersList: list
                     )
                 }
+                .onDelete(perform: model.deleteButtonTapped(indexSet:))
             } header: {
                 Text("My lists")
                     .font(.largeTitle)
@@ -69,6 +93,6 @@ struct RemindersListsView: View {
         $0.defaultDatabase = try! appDatabase()
     }
     NavigationStack {
-        RemindersListsView()
+        RemindersListsView(model: .init())
     }
 }
