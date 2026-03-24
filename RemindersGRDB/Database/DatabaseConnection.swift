@@ -11,8 +11,12 @@ func appDatabase() throws -> any DatabaseWriter {
     configuration.prepareDatabase { db in
         #if DEBUG
         db.trace(options: .profile) { trace in
-            Task { @MainActor [description = trace.expandedDescription] in
-                logger.debug("\(description)")
+            if context == .preview {
+                print(trace.expandedDescription)
+            } else {
+                Task { @MainActor [description = trace.expandedDescription] in
+                    logger.debug("\(description)")
+                }
             }
         }
         #endif
@@ -72,6 +76,16 @@ func appDatabase() throws -> any DatabaseWriter {
         """)
         .execute(db)
     }
+
+    #if DEBUG
+    migrator.registerMigration("Seed database") { db in
+        try db.seed {
+            RemindersList(id: 1, color: 0xe4a99ef_ff, title: "Family")
+            RemindersList(id: 2, color: 0xef734a_ff, title: "Personal")
+            RemindersList(id: 3, color: 0x7ee04a_ff, title: "Business")
+        }
+    }
+    #endif
 
     try migrator.migrate(database)
 

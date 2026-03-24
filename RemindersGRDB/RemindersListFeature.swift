@@ -1,6 +1,8 @@
 import SwiftUI
+import SQLiteData
 
 struct RemindersListsView: View {
+    @FetchAll(RemindersList.order(by: \.title)) var remindersLists
 
     @State private var searchText: String = ""
 
@@ -11,30 +13,12 @@ struct RemindersListsView: View {
             }
 
             Section {
-                RemindersListRow(
-                    incompleteRemindersCount: 5,
-                    remindersList: .init(
-                        id: 1,
-                        color: 0x4a99ef_ff,
-                        title: "Family"
+                ForEach(remindersLists) { list in
+                    RemindersListRow(
+                        incompleteRemindersCount: 0,
+                        remindersList: list
                     )
-                )
-                RemindersListRow(
-                    incompleteRemindersCount: 3,
-                    remindersList: .init(
-                        id: 2,
-                        color: 0xef734a_ff,
-                        title: "Personal"
-                    )
-                )
-                RemindersListRow(
-                    incompleteRemindersCount: 2,
-                    remindersList: .init(
-                        id: 3,
-                        color: 0x7ee04a_ff,
-                        title: "Business"
-                    )
-                )
+                }
             } header: {
                 Text("My lists")
                     .font(.largeTitle)
@@ -81,5 +65,10 @@ struct RemindersListsView: View {
 }
 
 #Preview {
-    RemindersListsView()
+    let _ = prepareDependencies {
+        $0.defaultDatabase = try! appDatabase()
+    }
+    NavigationStack {
+        RemindersListsView()
+    }
 }
