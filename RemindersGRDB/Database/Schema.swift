@@ -2,7 +2,7 @@ import Foundation
 import SQLiteData
 
 @Table
-struct RemindersList: Identifiable {
+struct RemindersList: Equatable, Identifiable {
     let id: Int
     var color = 0x4a99ef_ff
     var title = ""
@@ -19,7 +19,7 @@ struct Reminder: Identifiable {
     let id: Int
     var dueDate: Date?
     var isCompleted = false
-    var isFlagging = false
+    var isFlagged = false
     var notes = ""
     var priority: Priority?
     var remindersListID: RemindersList.ID
