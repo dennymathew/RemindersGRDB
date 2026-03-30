@@ -8,6 +8,8 @@ struct RemindersList: Equatable, Identifiable {
     var title = ""
 }
 
+extension RemindersList.Draft: Identifiable {}
+
 @Table
 struct Tag: Identifiable {
     let id: Int

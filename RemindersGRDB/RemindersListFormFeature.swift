@@ -4,7 +4,7 @@ import SwiftUI
 struct RemindersListForm: View {
     @Environment(\.dismiss) var dismiss
     @Dependency(\.defaultDatabase) var database
-    @State var remindersList: RemindersList
+    @State var remindersList: RemindersList.Draft
 
     var body: some View {
         Form {
@@ -38,7 +38,7 @@ struct RemindersListForm: View {
                 Button("Save") {
                     withErrorReporting {
                         try database.write { db in
-                            try RemindersList.insert { remindersList }
+                            try RemindersList.upsert { remindersList }
                                 .execute(db)
                         }
                     }
@@ -69,28 +69,25 @@ extension Int {
             let b = Int(components[2] * 0xFF) << 8
             let a = Int(
                 (components.indices.contains(3)
-                ? components[3] : 1) * 0xFF)
+                ? components[3] : 1) * 0xFF
+            )
             self = r | g | b | a
         }
     }
 }
 
-#Preview {
-    let _ = prepareDependencies {
-        $0.defaultDatabase = try! appDatabase()
-    }
-    Form {
-    }
-    .sheet(isPresented: .constant(true)) {
-        NavigationStack {
-            RemindersListForm(
-                remindersList: .init(
-                    id: 12,
-                    color: 0xef7e4a_ff,
-                    title: "Family"
-                )
-            )
+struct RemindersLIstFormPreviews: PreviewProvider {
+    static var previews: some View {
+        let _ = prepareDependencies {
+            $0.defaultDatabase = try! appDatabase()
         }
-        .presentationDetents([.medium])
+        Form {
+        }
+        .sheet(isPresented: .constant(true)) {
+            NavigationStack {
+                RemindersListForm(remindersList: .init())
+            }
+            .presentationDetents([.medium])
+        }
     }
 }

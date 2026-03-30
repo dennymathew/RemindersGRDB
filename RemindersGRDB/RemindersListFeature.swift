@@ -21,9 +21,12 @@ class RemindersListModel {
                     incompleteRemindersCount: $1.count(),
                     remindersList: $0
                 )
-            }
+            },
+        animation: .default
     )
     var remindersListRows: [RemindersListRow]
+
+    var remindersListForm: RemindersList.Draft?
 
     @Selection
     struct RemindersListRow {
@@ -31,28 +34,34 @@ class RemindersListModel {
         let remindersList: RemindersList
     }
 
-    func  deleteButtonTapped(indexSet: IndexSet) {
+    func  deleteButtonTapped(_ remindersList: RemindersList) {
         withErrorReporting {
             try database.write { db in
-                let ids = indexSet.map { remindersListRows[$0].remindersList.id }
                 try RemindersList
-                    .where { $0.id.in(ids) }
-                    .delete()
+                    .delete(remindersList)
                     .execute(db)
             }
         }
     }
+
+    func editButtonTapped(_ remindersList: RemindersList) {
+        remindersListForm = .init(remindersList)
+    }
+
+    func addListButtonTapped() {
+        remindersListForm = .init()
+    }
 }
 
 struct RemindersListsView: View {
-    let model: RemindersListModel
+    @Bindable var model: RemindersListModel
 
     @State private var searchText: String = ""
 
     var body: some View {
         List {
             Section {
-                    //Top-level stats
+                //Top-level stats
             }
 
             Section {
@@ -64,8 +73,20 @@ struct RemindersListsView: View {
                         incompleteRemindersCount: row.incompleteRemindersCount,
                         remindersList: row.remindersList
                     )
+                    .swipeActions {
+                        Button(role: .destructive) {
+                            model.deleteButtonTapped(row.remindersList)
+                        } label: {
+                            Image(systemName: "trash")
+                        }
+
+                        Button {
+                            model.editButtonTapped(row.remindersList)
+                        } label: {
+                            Image(systemName: "info")
+                        }
+                    }
                 }
-                .onDelete(perform: model.deleteButtonTapped(indexSet:))
             } header: {
                 Text("My lists")
                     .font(.largeTitle)
@@ -100,13 +121,20 @@ struct RemindersListsView: View {
                     }
                     Spacer()
                     Button {
-                            // Add list action
+                        model.addListButtonTapped()
                     }  label: {
                         Text("Add List")
                             .font(.title3)
                     }
                 }
             }
+        }
+        .sheet(item: $model.remindersListForm) { list in
+            NavigationStack {
+                RemindersListForm(remindersList: list)
+                    .navigationTitle("New List")
+            }
+            .presentationDetents([.medium])
         }
     }
 }

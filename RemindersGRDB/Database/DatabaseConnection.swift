@@ -15,7 +15,7 @@ func appDatabase() throws -> any DatabaseWriter {
                 print(trace.expandedDescription)
             } else {
                 Task { @MainActor [description = trace.expandedDescription] in
-                    logger.debug("\(description)")
+                    dbLogger.debug("\(description)")
                 }
             }
         }
@@ -25,7 +25,7 @@ func appDatabase() throws -> any DatabaseWriter {
     switch context {
         case .live:
             let path = URL.documentsDirectory.appendingPathComponent("db.sqlite").path()
-            logger.info("open \(path)")
+            dbLogger.info("open \(path)")
             database = try DatabasePool(path: path, configuration: configuration)
         case .preview, .test:
             database = try DatabaseQueue(configuration: configuration)
@@ -170,6 +170,6 @@ func appDatabase() throws -> any DatabaseWriter {
     return database
 }
 
-    // MARK: - Logger
+// MARK: - Logger
 
-private let logger = Logger(subsystem: "Reminders", category: "Database")
+private let dbLogger = Logger(subsystem: "Reminders", category: "Database")
