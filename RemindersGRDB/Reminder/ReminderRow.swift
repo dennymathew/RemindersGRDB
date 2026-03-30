@@ -8,10 +8,21 @@ struct ReminderRow: View {
     let tags: [String]
     let onDetailsTapped: () -> Void
 
+    @Dependency(\.defaultDatabase) var database
+
     var body: some View {
         HStack {
             HStack(alignment: .firstTextBaseline) {
-                Button {} label: {
+                Button {
+                    withErrorReporting {
+                        try database.write { db in
+                            try Reminder
+                                .find(reminder.id)
+                                .update { $0.isCompleted.toggle() }
+                                .execute(db)
+                        }
+                    }
+                } label: {
                     Image(
                         systemName: reminder.isCompleted
                         ? "circle.inset.filled"
@@ -85,10 +96,24 @@ struct ReminderRow: View {
         .buttonStyle(.borderless)
         .swipeActions {
             Button("Delete", role: .destructive) {
-                    // Delete action
+                withErrorReporting {
+                    try database.write { db in
+                        try Reminder
+                            .find(reminder.id)
+                            .delete()
+                            .execute(db)
+                    }
+                }
             }
             Button(reminder.isFlagged ? "Unflag" : "Flag") {
-                    // Toggle flag action
+                withErrorReporting {
+                    try database.write { db in
+                        try Reminder
+                            .find(reminder.id)
+                            .update { $0.isFlagged.toggle() }
+                            .execute(db)
+                    }
+                }
             }
             .tint(.orange)
             Button("Details") {
@@ -131,17 +156,9 @@ struct ReminderRow_Previews: PreviewProvider {
                 List {
                     ForEach(reminders) { reminder in
                         ReminderRow(
-                            color: .red,
+                            color: .blue,
                             isPastDue: false,
-                            reminder: .init(
-                                id: reminder.id,
-                                dueDate: reminder.dueDate,
-                                isCompleted: reminder.isCompleted,
-                                notes: reminder.notes,
-                                priority: reminder.priority,
-                                remindersListID: reminder.remindersListID,
-                                title: reminder.title,
-                            ),
+                            reminder: reminder,
                             tags: ["weekend", "fun"]
                         ) {}
                     }
