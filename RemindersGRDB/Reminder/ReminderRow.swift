@@ -150,7 +150,10 @@ struct ReminderRow_Previews: PreviewProvider {
     }
 
     struct Inner: View {
-        @FetchAll var reminders: [Reminder]
+        @FetchAll(
+            Reminder.order(by: \.isCompleted),
+            animation: .default
+        ) var reminders: [Reminder]
         var body: some View {
             NavigationStack {
                 List {
