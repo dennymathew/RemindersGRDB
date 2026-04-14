@@ -40,6 +40,8 @@ struct Reminder: Identifiable, QueryRepresentable {
     }
 }
 
+extension Reminder.Draft: Identifiable {}
+
 extension Reminder.TableColumns {
     var isPastDue: some QueryExpression<Bool> {
         !isCompleted && (dueDate ?? Date.distantFuture) < Date()

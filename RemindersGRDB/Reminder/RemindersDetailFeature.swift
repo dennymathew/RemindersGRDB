@@ -33,8 +33,9 @@ class RemindersDetailModel {
 
     var query: some StructuredQueries.Statement<Row> {
         Reminder
+            .group(by: \.id)
             .where {
-                if !showCompleted {
+                if detailType != .completed && !showCompleted {
                     !$0.isCompleted
                 }
             }
@@ -141,7 +142,7 @@ enum Ordering: String, CaseIterable {
     }
 }
 
-enum DetailType {
+enum DetailType: Equatable {
     case remindersList(RemindersList)
     case all
     case completed
@@ -287,6 +288,26 @@ struct RemindersDetailView: View {
                 }
             }
         }
+        .sheet(item: $model.reminderForm) { draft in
+            NavigationStack {
+                ReminderFormFeatureView(reminder: draft)
+                    .navigationTitle(
+                        draft.id == nil
+                        ? "New Reminder"
+                        : "Edit Reminder"
+                    )
+            }
+        }
+    }
+}
+
+extension RemindersDetailModel: Hashable {
+    nonisolated static func == (lhs: RemindersDetailModel, rhs: RemindersDetailModel) -> Bool {
+        lhs === rhs
+    }
+
+    nonisolated func hash(into hasher: inout Hasher) {
+        hasher.combine(ObjectIdentifier(self))
     }
 }
 

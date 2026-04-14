@@ -26,7 +26,30 @@ class RemindersListModel {
     )
     var remindersListRows: [RemindersListRow]
 
+    @ObservationIgnored
+    @FetchOne(
+        Reminder.select {
+            Stats.Columns(
+                allCount: $0.count(filter: !$0.isCompleted),
+                flaggedCount: $0.count(filter: !$0.isCompleted && $0.isFlagged),
+                scheduledCount: $0.count(filter: !$0.isCompleted && $0.isScheduled),
+                todayCount: $0.count(filter: !$0.isCompleted && $0.isToday)
+            )
+        }
+    )
+    var stats = Stats()
+
+    @Selection
+    struct Stats {
+        var allCount = 0
+        var flaggedCount = 0
+        var scheduledCount = 0
+        var todayCount = 0
+    }
+
     var remindersListForm: RemindersList.Draft?
+
+    var remindersDetail: RemindersDetailModel?
 
     @Selection
     struct RemindersListRow {
@@ -51,6 +74,10 @@ class RemindersListModel {
     func addListButtonTapped() {
         remindersListForm = .init()
     }
+
+    func detailButtonTapped(_ detailType: DetailType) {
+        remindersDetail = RemindersDetailModel(detailType: detailType)
+    }
 }
 
 struct RemindersListsView: View {
@@ -61,7 +88,65 @@ struct RemindersListsView: View {
     var body: some View {
         List {
             Section {
-                //Top-level stats
+                Grid(
+                    alignment: .leading,
+                    horizontalSpacing: 16,
+                    verticalSpacing: 16
+                ) {
+                    GridRow {
+                        ReminderGridCell(
+                            color: .blue,
+                            count: model.stats.todayCount,
+                            iconName: "calendar.circle.fill",
+                            title: "Today"
+                        ) {
+                            model.detailButtonTapped(.today)
+                        }
+
+                        ReminderGridCell(
+                            color: .red,
+                            count: model.stats.scheduledCount,
+                            iconName: "calendar.circle.fill",
+                            title: "Scheduled"
+                        ) {
+                            model.detailButtonTapped(.scheduled)
+                        }
+                    }
+
+                    GridRow {
+                        ReminderGridCell(
+                            color: .gray,
+                            count: model.stats.allCount,
+                            iconName: "tray.circle.fill",
+                            title: "All"
+                        ) {
+                            model.detailButtonTapped(.all)
+                        }
+
+                        ReminderGridCell(
+                            color: .orange,
+                            count: model.stats.flaggedCount,
+                            iconName: "flag.circle.fill",
+                            title: "Flagged"
+                        ) {
+                            model.detailButtonTapped(.flagged)
+                        }
+                    }
+
+                    GridRow {
+                        ReminderGridCell(
+                            color: .gray,
+                            count: model.stats.allCount,
+                            iconName: "checkmark.circle.fill",
+                            title: "Completed"
+                        ) {
+                            model.detailButtonTapped(.completed)
+                        }
+                    }
+                }
+                .buttonStyle(.plain)
+                .listRowBackground(Color.clear)
+                .padding([.leading, .trailing], -16)
             }
 
             Section {
@@ -69,10 +154,15 @@ struct RemindersListsView: View {
                     model.remindersListRows,
                     id: \.remindersList.id
                 ) { row in
-                    RemindersListRow(
-                        incompleteRemindersCount: row.incompleteRemindersCount,
-                        remindersList: row.remindersList
-                    )
+                    Button {
+                        model.detailButtonTapped(.remindersList(row.remindersList))
+                    } label: {
+                        RemindersListRow(
+                            incompleteRemindersCount: row.incompleteRemindersCount,
+                            remindersList: row.remindersList
+                        )
+                        .foregroundColor(.primary)
+                    }
                     .swipeActions {
                         Button(role: .destructive) {
                             model.deleteButtonTapped(row.remindersList)
@@ -110,7 +200,7 @@ struct RemindersListsView: View {
             ToolbarItem(placement: .bottomBar) {
                 HStack {
                     Button {
-                            // New reminder action
+//                        model.newReminderButtonTapped()
                     } label: {
                         HStack {
                             Image(systemName: "plus.circle.fill")
@@ -135,6 +225,57 @@ struct RemindersListsView: View {
                     .navigationTitle("New List")
             }
             .presentationDetents([.medium])
+        }
+        .navigationDestination(item: $model.remindersDetail) { details in
+            RemindersDetailView(model: details)
+        }
+    }
+
+    private struct ReminderGridCell: View {
+        let color: Color
+        let count: Int?
+        let iconName: String
+        let title: String
+        let action: () -> Void
+
+        var body: some View {
+            Button(action: action) {
+                HStack(alignment: .firstTextBaseline) {
+                    VStack(alignment: .leading, spacing: 8) {
+                        Image(systemName: iconName)
+                            .font(.largeTitle)
+                            .bold()
+                            .foregroundStyle(color)
+                            .background(
+                                Color
+                                    .white
+                                    .clipShape(Circle())
+                                    .padding(4)
+                            )
+
+                        Text(title)
+                            .font(.headline)
+                            .foregroundStyle(.gray)
+                            .bold()
+                            .padding(.leading, 4)
+
+                        Spacer()
+
+                        if let count {
+                            Text("\(count)")
+                                .font(.largeTitle)
+                                .fontDesign(.rounded)
+                                .bold()
+                                .foregroundStyle(Color(.label))
+                        }
+                    }
+
+                    Spacer()
+                }
+                .padding(EdgeInsets(top: 8, leading: 12, bottom: 8, trailing: 12))
+                .background(Color(.secondarySystemGroupedBackground))
+                .cornerRadius(10)
+            }
         }
     }
 }
