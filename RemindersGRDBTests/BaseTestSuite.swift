@@ -11,6 +11,4 @@ import DependenciesTestSupport
     .dependency(\.defaultDatabase, try appDatabase()),
     .snapshots(record: .failed)
 )
-struct BaseTestSuite {
-
-}
+struct BaseTestSuite {}
