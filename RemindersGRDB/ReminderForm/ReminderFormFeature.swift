@@ -8,6 +8,9 @@ struct ReminderFormFeatureView: View {
     @FetchOne var selectedRemindersList = RemindersList.Draft()
     @FetchAll var remindersLists: [RemindersList]
 
+    @Dependency(\.defaultDatabase) var database
+    @Environment(\.dismiss) var dismiss
+
     @State private var isPresentingTagsPopover = false
     @State private var isPresentingDatePopover = false
 
@@ -99,7 +102,6 @@ struct ReminderFormFeatureView: View {
                         Text("List")
                     }
                 }
-
             }
         }
         .task(id: reminder.remindersListID) {
@@ -113,7 +115,14 @@ struct ReminderFormFeatureView: View {
         .toolbar {
             ToolbarItem {
                 Button {
-
+                    withErrorReporting {
+                        try database.write { db in
+                            try Reminder
+                                .upsert {reminder }
+                                .execute(db)
+                        }
+                    }
+                    dismiss()
                 } label: {
                     Text("Save")
                 }
@@ -121,12 +130,26 @@ struct ReminderFormFeatureView: View {
 
             ToolbarItem(placement: .cancellationAction) {
                 Button {
-
+                    dismiss()
                 } label: {
                     Text("Cancel")
                 }
             }
         }
+    }
+}
+
+extension Date? {
+    var isNotNil: Bool {
+        get { self != nil }
+        set { self = newValue ? Date() : nil }
+    }
+}
+
+extension Optional {
+    fileprivate subscript(coalesce coalesce: Wrapped) -> Wrapped {
+        get  { self ?? coalesce }
+        set { self = newValue }
     }
 }
 
@@ -148,19 +171,5 @@ struct ReminderFormFeature_Previews: PreviewProvider {
             )
             .navigationTitle("Reminder")
         }
-    }
-}
-
-extension Date? {
-    var isNotNil: Bool {
-        get { self != nil }
-        set { self = newValue ? Date() : nil }
-    }
-}
-
-extension Optional {
-    fileprivate subscript(coalesce coalesce: Wrapped) -> Wrapped {
-        get  { self ?? coalesce }
-        set { self = newValue }
     }
 }

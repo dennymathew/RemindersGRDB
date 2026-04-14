@@ -23,7 +23,7 @@ extension Tag?.TableColumns {
 }
 
 @Table
-struct Reminder: Identifiable {
+struct Reminder: Identifiable, QueryRepresentable {
     let id: Int
     var dueDate: Date?
     var isCompleted = false
