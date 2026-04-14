@@ -6,16 +6,13 @@ import SQLiteData
 import InlineSnapshotTesting
 import SnapshotTestingCustomDump
 
-@Suite(
-    .dependency(\.defaultDatabase, try appDatabase()),
-    .snapshots(record: .failed)
-)
-@MainActor
-struct RemindersListsTests {
-    @Test func deletion() async throws {
-        let model = RemindersListModel()
-        try await model.$remindersListRows.load()
-        assertInlineSnapshot(of: model.remindersListRows, as: .customDump) {
+extension BaseTestSuite {
+    @MainActor
+    struct RemindersListsTests {
+        @Test func deletion() async throws {
+            let model = RemindersListModel()
+            try await model.$remindersListRows.load()
+            assertInlineSnapshot(of: model.remindersListRows, as: .customDump) {
             """
             [
               [0]: RemindersListModel.RemindersListRow(
@@ -44,12 +41,12 @@ struct RemindersListsTests {
               )
             ]
             """
-        }
+            }
 
-        model.deleteButtonTapped(indexSet: [1])
-        try await model.$remindersListRows.load()
+            model.deleteButtonTapped(model.remindersListRows[1].remindersList)
+            try await model.$remindersListRows.load()
 
-        assertInlineSnapshot(of: model.remindersListRows, as: .customDump) {
+            assertInlineSnapshot(of: model.remindersListRows, as: .customDump) {
             """
             [
               [0]: RemindersListModel.RemindersListRow(
@@ -70,6 +67,7 @@ struct RemindersListsTests {
               )
             ]
             """
+            }
         }
     }
 }
