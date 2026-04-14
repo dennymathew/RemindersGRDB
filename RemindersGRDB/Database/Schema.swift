@@ -16,6 +16,12 @@ struct Tag: Identifiable {
     var title = ""
 }
 
+extension Tag?.TableColumns {
+    var jsonTitles: some QueryExpression<[String].JSONRepresentation> {
+        (self.title ?? "").jsonGroupArray(filter: self.id.isNot(nil))
+    }
+}
+
 @Table
 struct Reminder: Identifiable {
     let id: Int
@@ -31,6 +37,20 @@ struct Reminder: Identifiable {
         case low = 1
         case medium
         case high
+    }
+}
+
+extension Reminder.TableColumns {
+    var isPastDue: some QueryExpression<Bool> {
+        !isCompleted && (dueDate ?? Date.distantFuture) < Date()
+    }
+
+    var isScheduled: some QueryExpression<Bool> {
+        dueDate.isNot(nil)
+    }
+
+    var isToday: some QueryExpression<Bool> {
+        #sql("date(\(dueDate)) == date()")
     }
 }
 
