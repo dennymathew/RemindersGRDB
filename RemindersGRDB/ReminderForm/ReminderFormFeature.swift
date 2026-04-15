@@ -2,11 +2,12 @@ import IssueReporting
 import SQLiteData
 import SwiftUI
 
-struct ReminderFormFeatureView: View {
+struct ReminderFormView: View {
     @State var reminder: Reminder.Draft
 
     @FetchOne var selectedRemindersList = RemindersList.Draft()
-    @FetchAll var remindersLists: [RemindersList]
+    @FetchAll(RemindersList.order(by: \.title))
+    var remindersLists: [RemindersList]
 
     @Dependency(\.defaultDatabase) var database
     @Environment(\.dismiss) var dismiss
@@ -17,18 +18,19 @@ struct ReminderFormFeatureView: View {
     var body: some View {
         Form {
             TextField("Title", text: $reminder.title)
-
             TextEditor(text: $reminder.notes)
                 .lineLimit(4)
 
             Section {
                 Button {
-                    isPresentingTagsPopover.toggle()
+                    // TODO: - Tags action
                 } label: {
                     HStack {
                         Image(systemName: "number.square.fill")
                             .font(.title)
                             .foregroundStyle(.gray)
+                        Text("Tags")
+                            .foregroundStyle(Color(.label))
                         Spacer()
                         Text("weekend #fun") // TODO: - Get tags
                             .lineLimit(1)
@@ -78,7 +80,7 @@ struct ReminderFormFeatureView: View {
                     Divider()
                     Text("High").tag(Reminder.Priority.high)
                     Text("Medium").tag(Reminder.Priority.medium)
-                    Text("low").tag(Reminder.Priority.low)
+                    Text("Low").tag(Reminder.Priority.low)
                 } label: {
                     HStack {
                         Image(systemName: "exclamationmark.circle.fill")
@@ -102,12 +104,21 @@ struct ReminderFormFeatureView: View {
                         Text("List")
                     }
                 }
+            } footer: {
+                VStack {
+                    if let createdAt = reminder.createdAt {
+                        Text("Created: \(createdAt.formatted(date: .long, time: .shortened))")
+                    }
+                    if let updatedAt = reminder.updatedAt {
+                        Text("Updated: \(updatedAt.formatted(date: .long, time: .shortened))")
+                    }
+                }
             }
         }
         .task(id: reminder.remindersListID) {
             await withErrorReporting {
                 try await $selectedRemindersList.load(
-                    try await RemindersList.Draft
+                    RemindersList.Draft
                         .where { $0.id.eq(reminder.remindersListID) }
                 )
             }
@@ -117,9 +128,7 @@ struct ReminderFormFeatureView: View {
                 Button {
                     withErrorReporting {
                         try database.write { db in
-                            try Reminder
-                                .upsert {reminder }
-                                .execute(db)
+                            try Reminder.upsert { reminder }.execute(db)
                         }
                     }
                     dismiss()
@@ -127,7 +136,6 @@ struct ReminderFormFeatureView: View {
                     Text("Save")
                 }
             }
-
             ToolbarItem(placement: .cancellationAction) {
                 Button {
                     dismiss()
@@ -148,25 +156,27 @@ extension Date? {
 
 extension Optional {
     fileprivate subscript(coalesce coalesce: Wrapped) -> Wrapped {
-        get  { self ?? coalesce }
+        get { self ?? coalesce }
         set { self = newValue }
     }
 }
 
-struct ReminderFormFeature_Previews: PreviewProvider {
+struct ReminderFormPreview: PreviewProvider {
     static var previews: some View {
         let _ = try! prepareDependencies {
             $0.defaultDatabase = try appDatabase()
         }
         NavigationStack {
-            ReminderFormFeatureView(
-                reminder: .init(
+            ReminderFormView(
+                reminder: Reminder.Draft(
+                    createdAt: Date(),
                     dueDate: Date(),
                     isFlagged: true,
-                    notes: "* Milk\n* Eggs\n * Cheese",
+                    notes: "* Milk\n* Eggs\n* Cheese",
                     priority: .medium,
                     remindersListID: 1,
-                    title: "Get groceries"
+                    title: "Get groceries",
+                    updatedAt: Date()
                 )
             )
             .navigationTitle("Reminder")

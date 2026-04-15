@@ -2,7 +2,7 @@ import SwiftUI
 import SQLiteData
 
 @Observable
-class RemindersListModel {
+class RemindersListsModel {
     @ObservationIgnored
     @Dependency(\.defaultDatabase)
     var database
@@ -81,7 +81,7 @@ class RemindersListModel {
 }
 
 struct RemindersListsView: View {
-    @Bindable var model: RemindersListModel
+    @Bindable var model: RemindersListsModel
 
     @State private var searchText: String = ""
 

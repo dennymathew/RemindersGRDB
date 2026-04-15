@@ -10,12 +10,12 @@ extension BaseTestSuite {
     @MainActor
     struct RemindersListsTests {
         @Test func deletion() async throws {
-            let model = RemindersListModel()
+            let model = RemindersListsModel()
             try await model.$remindersListRows.load()
             assertInlineSnapshot(of: model.remindersListRows, as: .customDump) {
             """
             [
-              [0]: RemindersListModel.RemindersListRow(
+              [0]: RemindersListsModel.RemindersListRow(
                 incompleteRemindersCount: 1,
                 remindersList: RemindersList(
                   id: 3,
@@ -23,7 +23,7 @@ extension BaseTestSuite {
                   title: "Business"
                 )
               ),
-              [1]: RemindersListModel.RemindersListRow(
+              [1]: RemindersListsModel.RemindersListRow(
                 incompleteRemindersCount: 4,
                 remindersList: RemindersList(
                   id: 1,
@@ -31,7 +31,7 @@ extension BaseTestSuite {
                   title: "Family"
                 )
               ),
-              [2]: RemindersListModel.RemindersListRow(
+              [2]: RemindersListsModel.RemindersListRow(
                 incompleteRemindersCount: 2,
                 remindersList: RemindersList(
                   id: 2,
@@ -49,7 +49,7 @@ extension BaseTestSuite {
             assertInlineSnapshot(of: model.remindersListRows, as: .customDump) {
             """
             [
-              [0]: RemindersListModel.RemindersListRow(
+              [0]: RemindersListsModel.RemindersListRow(
                 incompleteRemindersCount: 1,
                 remindersList: RemindersList(
                   id: 3,
@@ -57,7 +57,7 @@ extension BaseTestSuite {
                   title: "Business"
                 )
               ),
-              [1]: RemindersListModel.RemindersListRow(
+              [1]: RemindersListsModel.RemindersListRow(
                 incompleteRemindersCount: 2,
                 remindersList: RemindersList(
                   id: 2,

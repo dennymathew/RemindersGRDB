@@ -5,8 +5,6 @@ import SwiftUI
 @MainActor
 @Observable
 class RemindersDetailModel {
-    let detailType: DetailType
-
     @ObservationIgnored
     @FetchAll var rows: [Row]
 
@@ -17,6 +15,11 @@ class RemindersDetailModel {
     @Shared var ordering: Ordering
 
     var reminderForm: Reminder.Draft?
+
+    let detailType: DetailType
+
+    @ObservationIgnored
+    @Dependency(\.defaultDatabase) var database
 
     init(detailType: DetailType) {
         self.detailType = detailType
@@ -78,9 +81,7 @@ class RemindersDetailModel {
     }
 
     func toggleShowCompletedButtonTapped() async {
-        $showCompleted.withLock {
-            $0.toggle()
-        }
+        $showCompleted.withLock { $0.toggle() }
         await updateQuery()
     }
 
@@ -89,8 +90,8 @@ class RemindersDetailModel {
         await updateQuery()
     }
 
-    func reminderDetailsButtonTapped(_ reminder: Reminder) {
-        reminderForm = .init(reminder)
+    func reminderDetailsButtonTapped(reminder: Reminder) {
+        reminderForm = Reminder.Draft(reminder)
     }
 
     func newReminderButtonTapped() {
@@ -118,10 +119,33 @@ class RemindersDetailModel {
 
     @Selection
     struct Row {
-        var isPastDue: Bool
-        var reminder: Reminder
+        let isPastDue: Bool
+        let reminder: Reminder
         @Column(as: [String].JSONRepresentation.self)
-        var tags: [String]
+        let tags: [String]
+    }
+}
+
+extension RemindersDetailModel: Hashable {
+    nonisolated static func == (
+        lhs: RemindersDetailModel,
+        rhs: RemindersDetailModel
+    ) -> Bool {
+        lhs === rhs
+    }
+    nonisolated func hash(into hasher: inout Hasher) {
+        hasher.combine(ObjectIdentifier(self))
+    }
+
+    func flagAllRemindersButtonTapped() {
+        withErrorReporting {
+            try database.write { db in
+                try Reminder
+                    .where { $0.id.in(rows.map(\.reminder.id)) }
+                    .update { $0.isFlagged = true }
+                    .execute(db)
+            }
+        }
     }
 }
 
@@ -132,28 +156,25 @@ enum Ordering: String, CaseIterable {
 
     var icon: Image {
         switch self {
-            case .dueDate:
-                .init(systemName: "calendar")
-            case .priority:
-                .init(systemName: "chart.bar.fill")
-            case .title:
-                .init(systemName: "textformat.characters")
+            case .dueDate: Image(systemName: "calendar")
+            case .priority: Image(systemName: "chart.bar.fill")
+            case .title: Image(systemName: "textformat.characters")
         }
     }
 }
 
 enum DetailType: Equatable {
-    case remindersList(RemindersList)
     case all
     case completed
     case flagged
+    case remindersList(RemindersList)
     case scheduled
     case today
 
     var navigationTitle: String {
         switch self {
             case let .remindersList(remindersList):
-                "\(remindersList.title) Reminders"
+                remindersList.title
             case .all:
                 "All"
             case .completed:
@@ -172,15 +193,15 @@ enum DetailType: Equatable {
             case let .remindersList(remindersList):
                 remindersList.color.swiftUIColor
             case .all:
-                .black
+                    .black
             case .completed:
-                .gray
+                    .gray
             case .flagged:
-                .orange
+                    .orange
             case .scheduled:
-                .red
+                    .red
             case .today:
-                .blue
+                    .blue
         }
     }
 
@@ -214,7 +235,7 @@ struct RemindersDetailView: View {
                     reminder: row.reminder,
                     tags: row.tags
                 ) {
-                    model.reminderDetailsButtonTapped(row.reminder)
+                    model.reminderDetailsButtonTapped(reminder: row.reminder)
                 }
             }
         }
@@ -228,7 +249,7 @@ struct RemindersDetailView: View {
                     } label: {
                         HStack {
                             Image(systemName: "plus.circle.fill")
-                            Text("New reminder")
+                            Text("New Reminder")
                         }
                         .bold()
                         .font(.title3)
@@ -263,25 +284,24 @@ struct RemindersDetailView: View {
                                 model.ordering.icon
                             }
                         }
-                        Button {
-                            Task {
-                                await model.toggleShowCompletedButtonTapped()
-                            }
-                        } label: {
-                            Label {
-                                Text(
-                                    model.showCompleted
-                                    ? "Hide completed" : "Show completed"
-                                )
-                            } icon: {
-                                Image(
-                                    systemName: model.showCompleted
-                                    ? "eye.slash.fill" : "eye"
-                                )
+                        if model.detailType != .completed {
+                            Button {
+                                Task {
+                                    await model.toggleShowCompletedButtonTapped()
+                                }
+                            } label: {
+                                Label {
+                                    Text(model.showCompleted ? "Hide Completed" : "Show Completed")
+                                } icon: {
+                                    Image(systemName: model.showCompleted ? "eye.slash.fill" : "eye")
+                                }
                             }
                         }
                     }
                     .tint(model.detailType.color)
+                    Button("Flag all reminders") {
+                        model.flagAllRemindersButtonTapped()
+                    }
                 } label: {
                     Image(systemName: "ellipsis.circle")
                         .tint(model.detailType.color)
@@ -290,7 +310,7 @@ struct RemindersDetailView: View {
         }
         .sheet(item: $model.reminderForm) { draft in
             NavigationStack {
-                ReminderFormFeatureView(reminder: draft)
+                ReminderFormView(reminder: draft)
                     .navigationTitle(
                         draft.id == nil
                         ? "New Reminder"
@@ -301,20 +321,10 @@ struct RemindersDetailView: View {
     }
 }
 
-extension RemindersDetailModel: Hashable {
-    nonisolated static func == (lhs: RemindersDetailModel, rhs: RemindersDetailModel) -> Bool {
-        lhs === rhs
-    }
-
-    nonisolated func hash(into hasher: inout Hasher) {
-        hasher.combine(ObjectIdentifier(self))
-    }
-}
-
 struct RemindersDetailPreview: PreviewProvider {
     static var previews: some View {
         let remindersList = try! prepareDependencies {
-            $0.defaultDatabase = try! appDatabase()
+            $0.defaultDatabase = try appDatabase()
             return try $0.defaultDatabase.read { db in
                 try RemindersList.find(1).fetchOne(db)!
             }
@@ -322,7 +332,11 @@ struct RemindersDetailPreview: PreviewProvider {
 
         NavigationStack {
             RemindersDetailView(
-                model: .init(detailType: .remindersList(remindersList))
+                model: RemindersDetailModel(
+                    detailType: .remindersList(
+                        remindersList
+                    )
+                )
             )
         }
     }

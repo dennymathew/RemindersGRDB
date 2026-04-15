@@ -22,19 +22,21 @@ extension Color {
             red: Double((hex >> 24) & 0xFF) / 255.0,
             green: Double((hex >> 16) & 0xFF) / 255.0,
             blue: Double((hex >> 8) & 0xFF) / 255.0,
-            opacity: Double(hex & 0xFF) / 255.0
+            opacity: Double(hex & 0xFF) / 0xFF
         )
     }
 }
 
 #Preview {
-    RemindersListRow(
-        incompleteRemindersCount: 3,
-        remindersList: RemindersList(
-            id: 0,
-            color: 0x4a99ef_ff,
-            title: "Test"
-        )
-    )
+    NavigationStack {
+        List {
+            RemindersListRow(
+                incompleteRemindersCount: 10,
+                remindersList: RemindersList(
+                    id: 1,
+                    title: "Personal"
+                )
+            )
+        }
+    }
 }
-
