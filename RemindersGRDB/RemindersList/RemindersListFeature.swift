@@ -258,19 +258,17 @@ struct RemindersListsView: View {
                             .foregroundStyle(.gray)
                             .bold()
                             .padding(.leading, 4)
-
-                        Spacer()
-
-                        if let count {
-                            Text("\(count)")
-                                .font(.largeTitle)
-                                .fontDesign(.rounded)
-                                .bold()
-                                .foregroundStyle(Color(.label))
-                        }
                     }
 
                     Spacer()
+
+                    if let count {
+                        Text("\(count)")
+                            .font(.largeTitle)
+                            .fontDesign(.rounded)
+                            .bold()
+                            .foregroundStyle(Color(.label))
+                    }
                 }
                 .padding(EdgeInsets(top: 8, leading: 12, bottom: 8, trailing: 12))
                 .background(Color(.secondarySystemGroupedBackground))
