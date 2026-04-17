@@ -10,14 +10,8 @@ struct RemindersListForm: View {
         Form {
             Section {
                 VStack {
-                    TextField("List name", text: $remindersList.title)
-                        .font(
-                            .system(
-                                .title2,
-                                design: .rounded,
-                                weight: .bold
-                            )
-                        )
+                    TextField("List Name", text: $remindersList.title)
+                        .font(.system(.title2, design: .rounded, weight: .bold))
                         .foregroundStyle(Color(hex: remindersList.color))
                         .multilineTextAlignment(.center)
                         .padding()
@@ -76,16 +70,23 @@ extension Int {
     }
 }
 
-struct RemindersLIstFormPreviews: PreviewProvider {
+struct RemindersListFormPreviews: PreviewProvider {
     static var previews: some View {
         let _ = prepareDependencies {
             $0.defaultDatabase = try! appDatabase()
         }
+
         Form {
         }
         .sheet(isPresented: .constant(true)) {
             NavigationStack {
-                RemindersListForm(remindersList: .init())
+                RemindersListForm(
+                    remindersList: RemindersList.Draft(
+                        id: 2,
+                        color: 0xef7e4a_ff,
+                        title: "Family"
+                    )
+                )
             }
             .presentationDetents([.medium])
         }

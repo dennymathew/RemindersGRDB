@@ -4,19 +4,18 @@ import SQLiteData
 
 func appDatabase() throws -> any DatabaseWriter {
     @Dependency(\.context) var context
+
     let database: any DatabaseWriter
 
     var configuration = Configuration()
     configuration.foreignKeysEnabled = true
     configuration.prepareDatabase { db in
         #if DEBUG
-        db.trace(options: .profile) { trace in
+        db.trace(options: .profile) {
             if context == .preview {
-                print(trace.expandedDescription)
+                print($0.expandedDescription)
             } else {
-                Task { @MainActor [description = trace.expandedDescription] in
-                    dbLogger.debug("\(description)")
-                }
+                dbLogger.debug("\($0.expandedDescription)")
             }
         }
         #endif
@@ -24,7 +23,7 @@ func appDatabase() throws -> any DatabaseWriter {
 
     switch context {
         case .live:
-            let path = URL.documentsDirectory.appendingPathComponent("db.sqlite").path()
+            let path = URL.documentsDirectory.appending(component: "db.sqlite").path()
             dbLogger.info("open \(path)")
             database = try DatabasePool(path: path, configuration: configuration)
         case .preview, .test:
@@ -37,25 +36,28 @@ func appDatabase() throws -> any DatabaseWriter {
     #endif
 
     migrator.registerMigration("Create tables") { db in
-        try #sql("""
-        CREATE TABLE "remindersLists" (
-            "id" INTEGER PRIMARY KEY AUTOINCREMENT,
-            "color" INTEGER NOT NULL DEFAULT \(raw: 0x4a99ef_ff),
-            "title" TEXT NOT NULL DEFAULT ''
-        ) STRICT
-        """)
+        try #sql(
+      """
+      CREATE TABLE "remindersLists" (
+        "id" INTEGER PRIMARY KEY AUTOINCREMENT,
+        "color" INTEGER NOT NULL DEFAULT \(raw: 0x4a99ef_ff),
+        "title" TEXT NOT NULL DEFAULT ''
+      ) STRICT
+      """
+        )
         .execute(db)
-
-        try #sql("""
-        CREATE TABLE "tags" (
-            "id" INTEGER PRIMARY KEY AUTOINCREMENT,
-            "title" TEXT NOT NULL DEFAULT ''
-        ) STRICT
-        """)
+        try #sql(
+      """
+      CREATE TABLE "tags" (
+        "id" INTEGER PRIMARY KEY AUTOINCREMENT,
+        "title" TEXT NOT NULL DEFAULT ''
+      ) STRICT
+      """
+        )
         .execute(db)
-
-        try #sql("""
-        CREATE TABLE "reminders" (
+        try #sql(
+      """
+      CREATE TABLE "reminders" (
         "id" INTEGER PRIMARY KEY AUTOINCREMENT,
         "dueDate" TEXT,
         "isCompleted" INTEGER NOT NULL DEFAULT 0,
@@ -64,24 +66,36 @@ func appDatabase() throws -> any DatabaseWriter {
         "priority" INTEGER,
         "remindersListID" INTEGER NOT NULL REFERENCES "remindersLists"("id") ON DELETE CASCADE,
         "title" TEXT NOT NULL DEFAULT ''
-        ) STRICT
-        """)
+      ) STRICT
+      """
+        )
         .execute(db)
-
-        try #sql("""
-        CREATE TABLE "reminderTags" (
-            "reminderID" INTEGER NOT NULL REFERENCES "reminders"("id") ON DELETE CASCADE,
-            "tagID" INTEGER NOT NULL REFERENCES "tags"("id") ON DELETE CASCADE
-        ) STRICT
-        """)
+        try #sql(
+      """
+      CREATE TABLE "reminderTags" (
+        "reminderID" INTEGER NOT NULL REFERENCES "reminders"("id") ON DELETE CASCADE,
+        "tagID" INTEGER NOT NULL REFERENCES "tags"("id") ON DELETE CASCADE
+      ) STRICT
+      """
+        )
         .execute(db)
     }
-
+    migrator.registerMigration("Add 'createdAt' and 'updatedAt' to 'reminders'") { db in
+        try #sql("""
+      ALTER TABLE "reminders" ADD COLUMN "createdAt" TEXT
+      """)
+        .execute(db)
+        try #sql("""
+      ALTER TABLE "reminders" ADD COLUMN "updatedAt" TEXT
+      """)
+        .execute(db)
+    }
     #if DEBUG
     migrator.registerMigration("Seed database") { db in
+        @Dependency(\.date.now) var now
         try db.seed {
-            RemindersList(id: 1, color: 0xe4a99ef_ff, title: "Family")
-            RemindersList(id: 2, color: 0xef734a_ff, title: "Personal")
+            RemindersList(id: 1, color: 0x4a99ef_ff, title: "Personal")
+            RemindersList(id: 2, color: 0xef7e4a_ff, title: "Family")
             RemindersList(id: 3, color: 0x7ee04a_ff, title: "Business")
 
             Reminder(
@@ -92,14 +106,14 @@ func appDatabase() throws -> any DatabaseWriter {
             )
             Reminder(
                 id: 2,
-                dueDate: Date().addingTimeInterval(-60 * 60 * 24 * 2),
+                dueDate: now.addingTimeInterval(-60 * 60 * 24 * 2),
                 isFlagged: true,
                 remindersListID: 1,
                 title: "Haircut"
             )
             Reminder(
                 id: 3,
-                dueDate: Date(),
+                dueDate: now.addingTimeInterval(60 * 60 * 12),
                 notes: "Ask about diet",
                 priority: .high,
                 remindersListID: 1,
@@ -107,20 +121,20 @@ func appDatabase() throws -> any DatabaseWriter {
             )
             Reminder(
                 id: 4,
-                dueDate: Date().addingTimeInterval(-60 * 60 * 24 * 190),
+                dueDate: now.addingTimeInterval(-60 * 60 * 24 * 190),
                 isCompleted: true,
                 remindersListID: 1,
                 title: "Take a walk"
             )
             Reminder(
                 id: 5,
-                dueDate: Date(),
+                dueDate: now,
                 remindersListID: 1,
                 title: "Buy concert tickets"
             )
             Reminder(
                 id: 6,
-                dueDate: Date().addingTimeInterval(60 * 60 * 24 * 2),
+                dueDate: now.addingTimeInterval(60 * 60 * 24 * 2),
                 isFlagged: true,
                 priority: .high,
                 remindersListID: 2,
@@ -128,7 +142,7 @@ func appDatabase() throws -> any DatabaseWriter {
             )
             Reminder(
                 id: 7,
-                dueDate: Date().addingTimeInterval(-60 * 60 * 24 * 2),
+                dueDate: now.addingTimeInterval(-60 * 60 * 24 * 2),
                 isCompleted: true,
                 priority: .low,
                 remindersListID: 2,
@@ -136,7 +150,7 @@ func appDatabase() throws -> any DatabaseWriter {
             )
             Reminder(
                 id: 8,
-                dueDate: Date().addingTimeInterval(60 * 60 * 24 * 4),
+                dueDate: now.addingTimeInterval(60 * 60 * 24 * 4),
                 isCompleted: false,
                 priority: .high,
                 remindersListID: 2,
@@ -144,7 +158,7 @@ func appDatabase() throws -> any DatabaseWriter {
             )
             Reminder(
                 id: 9,
-                dueDate: Date().addingTimeInterval(60 * 60 * 24 * 2),
+                dueDate: now.addingTimeInterval(60 * 60 * 24 * 2),
                 notes: """
                     Status of tax return
                     Expenses for next year
@@ -155,17 +169,46 @@ func appDatabase() throws -> any DatabaseWriter {
             )
             Reminder(
                 id: 10,
-                dueDate: Date().addingTimeInterval(-60 * 60 * 24 * 2),
+                dueDate: now.addingTimeInterval(-60 * 60 * 24 * 2),
                 isCompleted: true,
                 priority: .medium,
                 remindersListID: 3,
                 title: "Send weekly emails"
             )
+
+            Tag(id: 1, title: "weekend")
+            Tag(id: 2, title: "fun")
+            Tag(id: 3, title: "easy-win")
+
+            ReminderTag(reminderID: 1, tagID: 1)
+            ReminderTag(reminderID: 2, tagID: 1)
+            ReminderTag(reminderID: 4, tagID: 1)
+
+            ReminderTag(reminderID: 4, tagID: 2)
+            ReminderTag(reminderID: 5, tagID: 2)
+
+            ReminderTag(reminderID: 2, tagID: 3)
+            ReminderTag(reminderID: 6, tagID: 3)
+            ReminderTag(reminderID: 7, tagID: 3)
+            ReminderTag(reminderID: 8, tagID: 3)
         }
     }
     #endif
 
     try migrator.migrate(database)
+
+    try database.write { db in
+        try #sql("""
+      CREATE TEMPORARY TRIGGER "reminders_updatedAt"
+      AFTER UPDATE ON "reminders"
+      FOR EACH ROW BEGIN
+        UPDATE "reminders"
+        SET "updatedAt" = datetime('subsec')
+        WHERE "id" = "new"."id";
+      END
+      """)
+        .execute(db)
+    }
 
     return database
 }

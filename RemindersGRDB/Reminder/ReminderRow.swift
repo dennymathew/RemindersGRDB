@@ -18,7 +18,10 @@ struct ReminderRow: View {
                         try database.write { db in
                             try Reminder
                                 .find(reminder.id)
-                                .update { $0.isCompleted.toggle() }
+                                .update {
+                                    $0.isCompleted.toggle()
+                                        //$0.updatedAt = Date()
+                                }
                                 .execute(db)
                         }
                     }
@@ -110,7 +113,10 @@ struct ReminderRow: View {
                     try database.write { db in
                         try Reminder
                             .find(reminder.id)
-                            .update { $0.isFlagged.toggle() }
+                            .update {
+                                $0.isFlagged.toggle()
+//                                $0.updatedAt = Date()
+                            }
                             .execute(db)
                     }
                 }
@@ -136,12 +142,14 @@ struct ReminderRow: View {
             result + Text(" #\(tag)")
         }
         return
-        (dueText + tagsText.foregroundStyle(.gray).bold())
-            .font(.callout)
+        (dueText
+         + tagsText.foregroundStyle(.gray)
+            .bold())
+        .font(.callout)
     }
 }
 
-struct ReminderRow_Previews: PreviewProvider {
+struct ReminderRowPreview: PreviewProvider {
     static var previews: some View {
         let _ = prepareDependencies {
             $0.defaultDatabase = try! appDatabase()
@@ -163,7 +171,9 @@ struct ReminderRow_Previews: PreviewProvider {
                             isPastDue: false,
                             reminder: reminder,
                             tags: ["weekend", "fun"]
-                        ) {}
+                        ) {
+                                // No-op
+                        }
                     }
                 }
             }
