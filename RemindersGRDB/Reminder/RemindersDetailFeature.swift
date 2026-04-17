@@ -242,21 +242,23 @@ struct RemindersDetailView: View {
         .navigationTitle(Text(model.detailType.navigationTitle))
         .listStyle(.plain)
         .toolbar {
-            ToolbarItem(placement: .bottomBar) {
-                HStack {
-                    Button {
-                        model.newReminderButtonTapped()
-                    } label: {
-                        HStack {
-                            Image(systemName: "plus.circle.fill")
-                            Text("New Reminder")
+            if model.detailType != .completed {
+                ToolbarItem(placement: .bottomBar) {
+                    HStack {
+                        Button {
+                            model.newReminderButtonTapped()
+                        } label: {
+                            HStack {
+                                Image(systemName: "plus.circle.fill")
+                                Text("New Reminder")
+                            }
+                            .bold()
+                            .font(.title3)
                         }
-                        .bold()
-                        .font(.title3)
+                        Spacer()
                     }
-                    Spacer()
+                    .tint(model.detailType.color)
                 }
-                .tint(model.detailType.color)
             }
 
             ToolbarItem(placement: .primaryAction) {
